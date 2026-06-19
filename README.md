@@ -1,3 +1,5 @@
+<div align="center">
+
 # 🚀 Remote Exec Server & Client
 
 ![License](https://img.shields.io/badge/License-MIT-blue.svg)
@@ -5,16 +7,16 @@
 ![GitHub stars](https://img.shields.io/github/stars/foxhackerzdevs/remote-exec-server?style=social)
 ![GitHub forks](https://img.shields.io/github/forks/foxhackerzdevs/remote-exec-server?style=social)
 
-**Lightweight Python-based remote command execution system**
+**Lightweight Python-based remote command execution system**  
 *One client script, multiple symlinks, BusyBox-style.*
 
-> ⚠️ **WARNING**
->
-> This software executes commands received over HTTP.
->
+> ⚠️ **WARNING**  
+> This software executes commands received over HTTP.  
 > Never expose it directly to the public Internet without authentication, encryption, access controls, and proper isolation.
 
 [Overview](#overview) • [Installation](#installation) • [Usage](#usage) • [Security Considerations](#security-considerations) • [License](#license)
+
+</div>
 
 ---
 
@@ -85,7 +87,7 @@ The design is intentionally lightweight, dependency-free, and easy to deploy.
 ┌─────────────┐
 │ subprocess  │
 │ execution   │
-└──────┬──────┘
+└─────────────┘
        │
        ▼
 ┌─────────────┐
@@ -316,38 +318,6 @@ echo "console.log('hello from node')" | node
 
 ```bash
 echo "hello" | python script.py arg1 arg2
-```
-
-## Example Request Flow
-
-User runs:
-
-```bash
-echo "print(2+2)" | python
-```
-
-Client sends:
-
-```http
-POST /python
-```
-
-Body:
-
-```text
-print(2+2)
-```
-
-Server executes:
-
-```bash
-python
-```
-
-Returns:
-
-```text
-4
 ```
 
 ---
