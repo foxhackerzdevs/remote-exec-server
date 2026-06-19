@@ -1,5 +1,3 @@
-<div align="center">
-
 # 🚀 Remote Exec Server & Client
 
 ![License](https://img.shields.io/badge/License-MIT-blue.svg)
@@ -7,43 +5,61 @@
 ![GitHub stars](https://img.shields.io/github/stars/foxhackerzdevs/remote-exec-server?style=social)
 ![GitHub forks](https://img.shields.io/github/forks/foxhackerzdevs/remote-exec-server?style=social)
 
-**Lightweight Python-based remote command execution system**  
-Inspired by the BusyBox model: one client script invoked under multiple names via symlinks, enabling remote execution of different programs transparently.  
-
-[Overview](#overview) • [Installation](#installation) • [Usage](#usage) • [Security Considerations](#security-considerations) • [License](#license)
-
-</div>
+**Lightweight Python-based remote command execution system**
+*One client script, multiple symlinks, BusyBox-style.*
 
 ---
 
-## 🌟 Overview
+## 📖 Table of Contents
 
-This project provides a simple yet powerful way to execute commands on a remote machine through a basic HTTP interface. The core idea is to have a server listening for commands and a client that forwards local command invocations and standard input to this server.
-
-**How it works:**
-
-- **Client (`client.py`):**
-  1. Detects the command name it was invoked as (e.g., `gp`, `python`, `node`).
-  2. Reads command-line arguments and standard input.
-  3. Sends an HTTP POST request to the remote server containing the command and its arguments, along with the stdin data.
-
-- **Server (`server.py`):**
-  1. Receives the HTTP request.
-  2. Decodes the command and arguments from the URL path.
-  3. Executes the command locally using Python's `subprocess.run()`.
-  4. Captures stdout and stderr.
-  5. Returns the captured stdout (or error message) back to the client.
-
-**Example use cases:**
-
-- Running PARI/GP remotely
-- Executing scripts on a dedicated compute machine
-- Accessing tools installed only on a server
-- Thin-client command forwarding
+* [Overview](#overview)
+* [Features](#features)
+* [Architecture](#architecture)
+* [Requirements](#requirements)
+* [Quick Start](#quick-start)
+* [Installation](#installation)
+* [Configuration](#configuration)
+* [Usage](#usage)
+* [Protocol](#protocol)
+* [Examples](#examples)
+* [Security Considerations](#security-considerations)
+* [Troubleshooting](#troubleshooting)
+* [Project Structure](#project-structure)
+* [Limitations](#limitations)
+* [Future Improvements](#future-improvements)
+* [Contributing](#contributing)
+* [License](#license)
 
 ---
 
-## 🏗️ Architecture
+## Overview
+
+Remote Exec Server & Client is a minimal remote command execution framework written entirely with the Python standard library.
+
+The project consists of:
+
+* **server.py** — receives HTTP requests and executes commands locally.
+* **client.py** — forwards command invocations and standard input to the server.
+* **BusyBox-style symlink support** — one client script can act as many commands depending on the name it is invoked under.
+
+The design is intentionally lightweight and dependency-free.
+
+---
+
+## Features
+
+* HTTP-based command forwarding
+* Standard input (stdin) forwarding
+* Command-line argument support
+* BusyBox-style symlink invocation
+* Works with any executable installed on the server
+* No third-party dependencies
+* Cross-platform Python implementation
+* Minimal setup and deployment
+
+---
+
+## Architecture
 
 ```text
 ┌─────────────┐
@@ -62,212 +78,453 @@ This project provides a simple yet powerful way to execute commands on a remote 
 │ subprocess  │
 │ execution   │
 └─────────────┘
+       │
+       ▼
+┌─────────────┐
+│   Output    │
+└─────────────┘
 ```
 
 ---
 
-## ✨ Features
+## Requirements
 
-- **Simple HTTP protocol** — straightforward POST request to send commands
-- **Stdin forwarding** — supports piping input to the remote command
-- **Argument support** — passes command-line arguments to the remote process
-- **Versatile execution** — works with any executable available on the server
-- **BusyBox-style symlinks** — a single client script emulates multiple commands
-- **Minimal dependencies** — relies only on the Python standard library
+* Python 3.8+
+* Network connectivity between client and server
+
+No external dependencies are required.
 
 ---
 
-## 💻 Tech Stack
+## ⚡ Quick Start
 
-- **Language:** Python 3.8+
-- **Libraries:** Python standard library only (`http.server`, `subprocess`, `urllib`, `shlex`, `os`)
+Start the server:
+
+```bash
+python server.py
+```
+
+Create a command symlink:
+
+```bash
+ln -s client.py gp
+```
+
+Execute a remote command:
+
+```bash
+echo "print(nextprime(100))" | ./gp -q
+```
 
 ---
 
-## 📋 Requirements
-
-- Python 3.8+
-- Network connectivity between client and server
-
-No third-party packages required.
-
----
-
-## ⬇️ Installation
+## Installation
 
 ### Server Setup
 
-1. Copy `server.py` to the machine that will execute commands.
-2. Start the server:
-   ```bash
-   python server.py
-   ```
-   The server listens on `0.0.0.0:8000` by default.
+Copy `server.py` to the machine that will execute commands.
+
+Run:
+
+```bash
+python server.py
+```
+
+Default listening address:
+
+```text
+0.0.0.0:8000
+```
+
+---
 
 ### Client Setup
 
-1. Edit `client.py` to set the server address:
-   ```python
-   host = "SERVER_IP:8000"
-   ```
+Edit the server address:
 
-2. Make it executable and place it in your PATH:
-   ```bash
-   chmod +x client.py
-   cp client.py ~/bin/
-   ```
-
-3. Create symlinks for each command to forward:
-   ```bash
-   ln -s ~/bin/client.py ~/bin/gp
-   ln -s ~/bin/client.py ~/bin/node
-   ```
-
-   When invoked through a symlink, the client forwards that command name to the server.
-
----
-
-## ▶️ Usage
-
-```bash
-# With piped input
-echo "input data" | command_name [args]
-
-# Without piped input
-command_name [args]
+```python
+host = "SERVER_IP:8000"
 ```
 
-Where `command_name` is one of the symlinks pointing to `client.py`.
+Make executable:
+
+```bash
+chmod +x client.py
+```
+
+Place in your PATH:
+
+```bash
+cp client.py ~/bin/
+```
+
+Create command aliases:
+
+```bash
+ln -s ~/bin/client.py ~/bin/gp
+ln -s ~/bin/client.py ~/bin/python
+ln -s ~/bin/client.py ~/bin/node
+```
+
+Each symlink name becomes the command executed remotely.
 
 ---
 
-## 💡 Examples
+## Configuration
 
-### Run PARI/GP remotely
+### Client
+
+Set the server host:
+
+```python
+host = "192.168.56.1:8000"
+```
+
+To enable HTTPS:
+
+```python
+http.client.HTTPSConnection
+```
+
+instead of:
+
+```python
+http.client.HTTPConnection
+```
+
+The server must also be configured for TLS.
+
+---
+
+### Server
+
+Bind only to localhost:
+
+```python
+HTTPServer(("127.0.0.1", 8000), MyHandler)
+```
+
+Change port:
+
+```python
+HTTPServer(("0.0.0.0", 9000), MyHandler)
+```
+
+---
+
+## Usage
+
+### Basic Execution
+
+```bash
+command_name [arguments]
+```
+
+### With Standard Input
+
+```bash
+echo "input data" | command_name [arguments]
+```
+
+### Using Symlinks
+
+```bash
+ln -s client.py python
+ln -s client.py node
+ln -s client.py gp
+```
+
+The invoked name determines the command sent to the server.
+
+---
+
+## Protocol
+
+The communication protocol is intentionally simple.
+
+### Request
+
+```http
+POST /python script.py arg1 arg2 HTTP/1.1
+Host: server:8000
+Content-Type: text/plain
+```
+
+Body:
+
+```text
+stdin data goes here
+```
+
+---
+
+### Server Processing
+
+```python
+cmd_parts = shlex.split(raw_path)
+subprocess.run(cmd_parts, input=stdin_data)
+```
+
+---
+
+### Response
+
+```text
+stdout output
+```
+
+or
+
+```text
+Error:
+stderr output
+```
+
+---
+
+## Examples
+
+### Remote PARI/GP
 
 ```bash
 echo "print(nextprime(100))" | gp -q
 ```
 
-### Run a remote Python command
+### Remote Python
 
 ```bash
 echo "print('Hello World')" | python
 ```
 
-### Pass arguments to a remote command
-
-```bash
-echo "hello" | python script.py some_arg another_arg
-```
-
-### Run remote Node.js
+### Remote Node.js
 
 ```bash
 echo "console.log('hello from node')" | node
 ```
 
----
+### Pass Arguments
 
-## ⚙️ Configuration
-
-### Client
-
-Change the server address:
-```python
-host = "YOUR_SERVER_IP:8000"
+```bash
+echo "hello" | python script.py arg1 arg2
 ```
 
-For TLS, replace `http.client.HTTPConnection` with `http.client.HTTPSConnection`. The server must also be configured for TLS.
+### Example Flow
 
-### Server
+User runs:
 
-Restrict to localhost only:
-```python
-server = HTTPServer(("127.0.0.1", 8000), MyHandler)
+```bash
+echo "print(2+2)" | python
+```
+
+Client sends:
+
+```http
+POST /python
+```
+
+Body:
+
+```text
+print(2+2)
+```
+
+Server executes:
+
+```bash
+python
+```
+
+Returns:
+
+```text
+4
 ```
 
 ---
 
-## 🛡️ Security Considerations
+## Security Considerations
 
-⚠️ **This server executes arbitrary commands received over HTTP. Never expose it to untrusted networks.**
+> ⚠️ **WARNING**
+>
+> This project executes commands received over HTTP.
+>
+> Never expose the server directly to the public Internet without authentication, encryption, and access controls.
 
-### Command whitelist
+### Risks
 
-Add a whitelist to `server.py` to restrict allowed commands:
+* Arbitrary command execution
+* Remote code execution (RCE)
+* Unauthorized access
+* Command abuse
+* Resource exhaustion
+
+### Recommended Protections
+
+#### Command Whitelisting
 
 ```python
-ALLOWED = {"gp", "python", "node"}
+ALLOWED = {"python", "gp", "node"}
 
 if cmd_parts[0] not in ALLOWED:
     output = f"Command not allowed: {cmd_parts[0]}"
-    # send error response and return
+    return
 ```
 
-### Network restrictions
+#### Network Restrictions
 
-- Use a VPN, SSH tunnel, or host-only network
-- Apply firewall rules to restrict access to trusted IPs only
-- Never expose the server port directly to the internet
+* VPN access only
+* SSH tunnels
+* Firewall allowlists
+* Private networks
 
-### Additional measures
+#### Authentication
 
-- Add API key or bearer token authentication
-- Never run with elevated privileges
-- Consider sandboxing via Docker, chroot, or a restricted user account
-- Use HTTPS when transmitting over any untrusted network
+Add:
+
+* API keys
+* Bearer tokens
+* Mutual TLS
+* Basic authentication
+
+#### Isolation
+
+Run commands:
+
+* Inside Docker containers
+* Inside restricted user accounts
+* Inside sandboxes
+
+#### Encryption
+
+Use HTTPS/TLS whenever traffic crosses untrusted networks.
 
 ---
 
-## 🛠️ Troubleshooting
+## Troubleshooting
 
-**Command not found** — ensure the executable exists on the server:
+### Connection Refused
+
+Check:
+
 ```bash
-which gp
+python server.py
+```
+
+Verify:
+
+* Server is running
+* Correct IP address
+* Correct port
+* Firewall settings
+
+---
+
+### Command Not Found
+
+Verify executable exists:
+
+```bash
 which python
 which node
+which gp
 ```
-
-**Connection refused** — confirm `server.py` is running and the `host` in `client.py` matches the server's IP and port.
-
-**No output returned** — check server logs; verify the command writes to stdout and not exclusively to stderr.
-
-**Wrong host** — double-check the `host` variable in `client.py`.
 
 ---
 
-## 📂 Project Structure
+### Empty Output
+
+Check:
+
+* Server logs
+* Command stdout/stderr behavior
+* Input handling
+
+---
+
+### Wrong Host
+
+Verify:
+
+```python
+host = "SERVER_IP:8000"
+```
+
+---
+
+## Project Structure
 
 ```text
 .
-├── client.py     # Client script for sending commands
-├── server.py     # Server script for executing commands
-├── README.md     # Documentation
-└── LICENSE       # MIT License
+├── client.py
+├── server.py
+├── README.md
+└── LICENSE
 ```
 
 ---
 
-## 🚀 Future Improvements
+## Limitations
 
-- HTTPS / TLS support
-- Authentication (API keys, bearer tokens, mutual TLS)
-- Command whitelisting built-in
-- Streaming output
-- Async request handling
-- File transfer
-- Rate limiting and audit logging
-- Docker deployment
+Current implementation:
 
----
+* No authentication
+* No TLS support by default
+* No output streaming
+* No concurrency
+* No request validation
+* No rate limiting
+* No audit logging
+* No file transfer support
 
-## 🤝 Contributing
-
-Contributions are welcome. Feel free to fork the repository, open an issue, or submit a pull request.
+These limitations are intentional to keep the code minimal.
 
 ---
 
-## 📜 License
+## Future Improvements
 
-MIT — see [LICENSE](LICENSE) for details.
+* HTTPS/TLS support
+* API-key authentication
+* Mutual TLS
+* Built-in command whitelists
+* Output streaming
+* Async request handling
+* Docker deployment
+* Audit logging
+* Request signing
+* Rate limiting
+* File upload/download support
+
+---
+
+## Contributing
+
+Contributions are welcome.
+
+Potential contribution areas:
+
+* Security enhancements
+* Protocol improvements
+* Testing
+* Documentation
+* Containerization
+* Performance optimization
+
+Open issues, submit pull requests, or fork the project.
+
+---
+
+## License
+
+MIT License
+
+See the `LICENSE` file for details.
+
+---
+
+<div align="center">
+
+**Remote Exec Server & Client**
+
+Minimal • Dependency-Free • BusyBox-Style • Python
+
+</div>
