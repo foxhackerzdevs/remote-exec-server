@@ -1,28 +1,18 @@
+<div align="center">
+
 # 🚀 Remote Exec Server & Client
 
-A lightweight Python-based remote command execution system. This project allows you to execute commands on a remote server by making HTTP requests from a client script.
+![License](https://img.shields.io/badge/License-MIT-blue.svg)
+![Python](https://img.shields.io/badge/Python-3.8%2B-green.svg)
+![GitHub stars](https://img.shields.io/github/stars/foxhackerzdevs/remote-exec-server?style=social)
+![GitHub forks](https://img.shields.io/github/forks/foxhackerzdevs/remote-exec-server?style=social)
 
-Inspired by the BusyBox model, a single client script can be invoked under multiple names via symlinks, enabling the remote execution of different programs transparently.
+**Lightweight Python-based remote command execution system**  
+Inspired by the BusyBox model: one client script invoked under multiple names via symlinks, enabling remote execution of different programs transparently.  
 
-## Table of Contents
+[Overview](#overview) • [Installation](#installation) • [Usage](#usage) • [Security Considerations](#security-considerations) • [License](#license)
 
-- [Overview](#overview)
-- [Architecture](#architecture)
-- [Features](#features)
-- [Tech Stack](#tech-stack)
-- [Requirements](#requirements)
-- [Installation](#installation)
-  - [Server Setup](#server-setup)
-  - [Client Setup](#client-setup)
-- [Usage](#usage)
-- [Examples](#examples)
-- [Configuration](#configuration)
-- [Security Considerations](#security-considerations)
-- [Troubleshooting](#troubleshooting)
-- [Project Structure](#project-structure)
-- [Future Improvements](#future-improvements)
-- [Contributing](#contributing)
-- [License](#license)
+</div>
 
 ---
 
