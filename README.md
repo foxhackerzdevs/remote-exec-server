@@ -8,9 +8,17 @@
 **Lightweight Python-based remote command execution system**
 *One client script, multiple symlinks, BusyBox-style.*
 
+> ⚠️ **WARNING**
+>
+> This software executes commands received over HTTP.
+>
+> Never expose it directly to the public Internet without authentication, encryption, access controls, and proper isolation.
+
+[Overview](#overview) • [Installation](#installation) • [Usage](#usage) • [Security Considerations](#security-considerations) • [License](#license)
+
 ---
 
-## 📖 Table of Contents
+# 📖 Table of Contents
 
 * [Overview](#overview)
 * [Features](#features)
@@ -32,7 +40,7 @@
 
 ---
 
-## Overview
+# Overview
 
 Remote Exec Server & Client is a minimal remote command execution framework written entirely with the Python standard library.
 
@@ -42,11 +50,11 @@ The project consists of:
 * **client.py** — forwards command invocations and standard input to the server.
 * **BusyBox-style symlink support** — one client script can act as many commands depending on the name it is invoked under.
 
-The design is intentionally lightweight and dependency-free.
+The design is intentionally lightweight, dependency-free, and easy to deploy.
 
 ---
 
-## Features
+# Features
 
 * HTTP-based command forwarding
 * Standard input (stdin) forwarding
@@ -59,7 +67,7 @@ The design is intentionally lightweight and dependency-free.
 
 ---
 
-## Architecture
+# Architecture
 
 ```text
 ┌─────────────┐
@@ -77,7 +85,7 @@ The design is intentionally lightweight and dependency-free.
 ┌─────────────┐
 │ subprocess  │
 │ execution   │
-└─────────────┘
+└──────┬──────┘
        │
        ▼
 ┌─────────────┐
@@ -87,7 +95,7 @@ The design is intentionally lightweight and dependency-free.
 
 ---
 
-## Requirements
+# Requirements
 
 * Python 3.8+
 * Network connectivity between client and server
@@ -96,7 +104,7 @@ No external dependencies are required.
 
 ---
 
-## ⚡ Quick Start
+# ⚡ Quick Start
 
 Start the server:
 
@@ -118,9 +126,9 @@ echo "print(nextprime(100))" | ./gp -q
 
 ---
 
-## Installation
+# Installation
 
-### Server Setup
+## Server Setup
 
 Copy `server.py` to the machine that will execute commands.
 
@@ -138,7 +146,7 @@ Default listening address:
 
 ---
 
-### Client Setup
+## Client Setup
 
 Edit the server address:
 
@@ -170,9 +178,9 @@ Each symlink name becomes the command executed remotely.
 
 ---
 
-## Configuration
+# Configuration
 
-### Client
+## Client
 
 Set the server host:
 
@@ -196,7 +204,7 @@ The server must also be configured for TLS.
 
 ---
 
-### Server
+## Server
 
 Bind only to localhost:
 
@@ -212,21 +220,21 @@ HTTPServer(("0.0.0.0", 9000), MyHandler)
 
 ---
 
-## Usage
+# Usage
 
-### Basic Execution
+## Basic Execution
 
 ```bash
 command_name [arguments]
 ```
 
-### With Standard Input
+## With Standard Input
 
 ```bash
 echo "input data" | command_name [arguments]
 ```
 
-### Using Symlinks
+## Using Symlinks
 
 ```bash
 ln -s client.py python
@@ -238,11 +246,11 @@ The invoked name determines the command sent to the server.
 
 ---
 
-## Protocol
+# Protocol
 
 The communication protocol is intentionally simple.
 
-### Request
+## Request
 
 ```http
 POST /python script.py arg1 arg2 HTTP/1.1
@@ -250,7 +258,7 @@ Host: server:8000
 Content-Type: text/plain
 ```
 
-Body:
+Request body:
 
 ```text
 stdin data goes here
@@ -258,7 +266,7 @@ stdin data goes here
 
 ---
 
-### Server Processing
+## Server Processing
 
 ```python
 cmd_parts = shlex.split(raw_path)
@@ -267,13 +275,15 @@ subprocess.run(cmd_parts, input=stdin_data)
 
 ---
 
-### Response
+## Response
+
+Success:
 
 ```text
 stdout output
 ```
 
-or
+Failure:
 
 ```text
 Error:
@@ -282,33 +292,33 @@ stderr output
 
 ---
 
-## Examples
+# Examples
 
-### Remote PARI/GP
+## Remote PARI/GP
 
 ```bash
 echo "print(nextprime(100))" | gp -q
 ```
 
-### Remote Python
+## Remote Python
 
 ```bash
 echo "print('Hello World')" | python
 ```
 
-### Remote Node.js
+## Remote Node.js
 
 ```bash
 echo "console.log('hello from node')" | node
 ```
 
-### Pass Arguments
+## Pass Arguments
 
 ```bash
 echo "hello" | python script.py arg1 arg2
 ```
 
-### Example Flow
+## Example Request Flow
 
 User runs:
 
@@ -342,25 +352,21 @@ Returns:
 
 ---
 
-## Security Considerations
+# Security Considerations
 
-> ⚠️ **WARNING**
->
-> This project executes commands received over HTTP.
->
-> Never expose the server directly to the public Internet without authentication, encryption, and access controls.
+This project provides remote command execution capability and should be treated accordingly.
 
-### Risks
+## Risks
 
 * Arbitrary command execution
 * Remote code execution (RCE)
 * Unauthorized access
-* Command abuse
 * Resource exhaustion
+* Data exposure
 
-### Recommended Protections
+## Recommended Protections
 
-#### Command Whitelisting
+### Command Whitelisting
 
 ```python
 ALLOWED = {"python", "gp", "node"}
@@ -370,23 +376,23 @@ if cmd_parts[0] not in ALLOWED:
     return
 ```
 
-#### Network Restrictions
+### Network Restrictions
 
 * VPN access only
 * SSH tunnels
 * Firewall allowlists
 * Private networks
 
-#### Authentication
+### Authentication
 
-Add:
+Implement one or more of:
 
 * API keys
 * Bearer tokens
 * Mutual TLS
 * Basic authentication
 
-#### Isolation
+### Isolation
 
 Run commands:
 
@@ -394,34 +400,34 @@ Run commands:
 * Inside restricted user accounts
 * Inside sandboxes
 
-#### Encryption
+### Encryption
 
 Use HTTPS/TLS whenever traffic crosses untrusted networks.
 
 ---
 
-## Troubleshooting
+# Troubleshooting
 
-### Connection Refused
+## Connection Refused
 
-Check:
+Verify:
 
 ```bash
 python server.py
 ```
 
-Verify:
+Check:
 
 * Server is running
 * Correct IP address
 * Correct port
-* Firewall settings
+* Firewall configuration
 
 ---
 
-### Command Not Found
+## Command Not Found
 
-Verify executable exists:
+Verify the executable exists:
 
 ```bash
 which python
@@ -431,7 +437,7 @@ which gp
 
 ---
 
-### Empty Output
+## Empty Output
 
 Check:
 
@@ -441,7 +447,7 @@ Check:
 
 ---
 
-### Wrong Host
+## Wrong Host
 
 Verify:
 
@@ -451,7 +457,7 @@ host = "SERVER_IP:8000"
 
 ---
 
-## Project Structure
+# Project Structure
 
 ```text
 .
@@ -463,9 +469,9 @@ host = "SERVER_IP:8000"
 
 ---
 
-## Limitations
+# Limitations
 
-Current implementation:
+Current implementation intentionally remains minimal.
 
 * No authentication
 * No TLS support by default
@@ -476,11 +482,9 @@ Current implementation:
 * No audit logging
 * No file transfer support
 
-These limitations are intentional to keep the code minimal.
-
 ---
 
-## Future Improvements
+# Future Improvements
 
 * HTTPS/TLS support
 * API-key authentication
@@ -496,7 +500,7 @@ These limitations are intentional to keep the code minimal.
 
 ---
 
-## Contributing
+# Contributing
 
 Contributions are welcome.
 
@@ -509,22 +513,12 @@ Potential contribution areas:
 * Containerization
 * Performance optimization
 
-Open issues, submit pull requests, or fork the project.
+Feel free to open issues, submit pull requests, or fork the project.
 
 ---
 
-## License
+# License
 
 MIT License
 
 See the `LICENSE` file for details.
-
----
-
-<div align="center">
-
-**Remote Exec Server & Client**
-
-Minimal • Dependency-Free • BusyBox-Style • Python
-
-</div>
