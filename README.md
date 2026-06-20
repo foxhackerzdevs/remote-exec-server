@@ -489,7 +489,8 @@ Feel free to open issues, submit pull requests, or fork the project.
 
 # License
 
-MIT License
+SPDX-License-Identifier: MIT
 
-See the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License — see the repository LICENSE file for the full text:
 
+[LICENSE](./LICENSE)
