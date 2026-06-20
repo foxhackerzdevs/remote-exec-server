@@ -491,4 +491,5 @@ Feel free to open issues, submit pull requests, or fork the project.
 
 MIT License
 
-See the `LICENSE` file for details.
+See the [LICENSE](LICENSE) file for details.
+
