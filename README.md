@@ -58,6 +58,21 @@ The design is intentionally lightweight, dependency-free, and easy to deploy.
 
 ---
 
+## 🌱 Project Inspiration
+
+The idea for **Remote Exec Server & Client** grew out of work on [pari-gp-scripts](https://github.com/Abhrankan-Chakrabarti/pari-gp-scripts), a collection of scripts for the PARI/GP number theory system.  
+
+While developing those scripts, I experimented with:
+- **Symlink wrappers** — one script acting as multiple commands, BusyBox‑style.  
+- **Lightweight tooling** — keeping dependencies minimal and relying on the standard library.  
+- **Command forwarding** — piping input into `gp` and other interpreters for quick execution.  
+
+These patterns sparked the realization that the same approach could be generalized: instead of just wrapping `gp` locally, why not design a framework where one client script can forward commands to a server over HTTP?  
+
+Thus, Remote Exec Server & Client was born — a minimal, dependency‑free system for remote command execution, inspired by the simplicity and flexibility of the PARI/GP scripting workflow.
+
+---
+
 # Features
 
 * HTTP-based command forwarding
