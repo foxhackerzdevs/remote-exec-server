@@ -438,7 +438,9 @@ host = "SERVER_IP:8000"
 ├── client.py
 ├── server.py
 ├── README.md
-└── LICENSE
+├── LICENSE
+└── docs/
+    └── diagram.png
 ```
 
 ---
