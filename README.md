@@ -518,3 +518,11 @@ SPDX-License-Identifier: MIT
 This project is licensed under the MIT License — see the repository LICENSE file for the full text:
 
 [LICENSE](./LICENSE)
+
+---
+
+## 🔗 See also
+
+- [PARI/GP Scripts](https://github.com/Abhrankan-Chakrabarti/pari-gp-scripts) —  
+  A collection of Bash wrappers for PARI/GP number theory experiments that inspired the design of this project.
+
