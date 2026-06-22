@@ -69,7 +69,7 @@ The design is intentionally lightweight, dependency-free, and easy to deploy.
 
 ---
 
-# Architecture
+## Architecture
 
 ```text
 ┌─────────────┐
@@ -94,6 +94,10 @@ The design is intentionally lightweight, dependency-free, and easy to deploy.
 │   Output    │
 └─────────────┘
 ```
+
+### Visual Diagram
+
+[![BusyBox-style Remote Exec Diagram](docs/diagram.png)](https://github.com/foxhackerzdevs/remote-exec-server)
 
 ---
 
