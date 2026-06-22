@@ -28,7 +28,7 @@
 * [Features](#features)
 * [Architecture](#architecture)
 * [Requirements](#requirements)
-* [Quick Start](#quick-start)
+* [Quick Start](#-quick-start)
 * [Installation](#installation)
 * [Configuration](#configuration)
 * [Usage](#usage)
