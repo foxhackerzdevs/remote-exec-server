@@ -6,6 +6,8 @@
 ![Python](https://img.shields.io/badge/Python-3.8%2B-green.svg)
 ![GitHub stars](https://img.shields.io/github/stars/foxhackerzdevs/remote-exec-server?style=social)
 ![GitHub forks](https://img.shields.io/github/forks/foxhackerzdevs/remote-exec-server?style=social)
+![GitHub release (latest by date)](https://img.shields.io/github/v/release/foxhackerzdevs/remote-exec-server?label=release&color=orange)
+![GitHub all releases](https://img.shields.io/github/downloads/foxhackerzdevs/remote-exec-server/total?label=downloads&color=blue)
 
 **Lightweight Python-based remote command execution system**  
 *One client script, multiple symlinks, BusyBox-style.*
