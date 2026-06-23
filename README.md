@@ -509,6 +509,8 @@ Potential contribution areas:
 
 Feel free to open issues, submit pull requests, or fork the project.
 
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines on documentation, security, development, and the contribution flow.
+
 ---
 
 # License
@@ -525,4 +527,5 @@ This project is licensed under the MIT License — see the repository LICENSE fi
 
 - [PARI/GP Scripts](https://github.com/Abhrankan-Chakrabarti/pari-gp-scripts) —  
   A collection of Bash wrappers for PARI/GP number theory experiments that inspired the design of this project.
+
 
