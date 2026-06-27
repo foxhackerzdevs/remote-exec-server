@@ -7,11 +7,11 @@ conn = http.client.HTTPConnection(host)  # use HTTPSConnection only if server su
 # Encode arguments safely
 path = "/" + urllib.parse.quote(sys.argv[0] + " " + " ".join(sys.argv[1:]))
 
-# Read stdin
-body = sys.stdin.read()
+# Read stdin as bytes to support non-Latin-1 characters (e.g. Unicode)
+body = sys.stdin.buffer.read()
 
-# Send request
-conn.request("POST", path, body=body)
+# Send request with explicit UTF-8 content type
+conn.request("POST", path, body=body, headers={"Content-Type": "text/plain; charset=utf-8"})
 
 # Print response
 response = conn.getresponse()
