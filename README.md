@@ -78,6 +78,7 @@ Thus, Remote Exec Server & Client was born — a minimal, dependency‑free syst
 * HTTP-based command forwarding
 * Standard input (stdin) forwarding
 * Command-line argument support
+* Real-time output streaming (chunked transfer encoding) — live progress bars and interactive output display correctly
 * BusyBox-style symlink invocation
 * Works with any executable installed on the server
 * No third-party dependencies
@@ -293,20 +294,25 @@ stdin data goes here
 
 ```python
 cmd_parts = shlex.split(raw_path)
-subprocess.run(cmd_parts, input=stdin_data)
+process = subprocess.Popen(cmd_parts, input=stdin_data,
+                            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 ```
+
+Output is streamed to the client line by line as the subprocess produces it, using HTTP chunked transfer encoding — rather than waiting for the process to exit and sending the full output at once.
 
 ---
 
 ## Response
 
+The response uses `Transfer-Encoding: chunked`. Each line of stdout is sent as a separate chunk as soon as it's produced, so long-running or interactive commands (e.g. progress bars) display in real time on the client rather than appearing all at once at the end.
+
 Success:
 
 ```text
-stdout output
+stdout output (streamed line by line)
 ```
 
-Failure:
+Failure (appended as a final chunk if the process exits non-zero):
 
 ```text
 Error:
@@ -469,8 +475,7 @@ Current implementation intentionally remains minimal.
 
 * No authentication
 * No TLS support by default
-* No output streaming
-* No concurrency
+* No concurrency (single request handled at a time)
 * No request validation
 * No rate limiting
 * No audit logging
@@ -484,7 +489,6 @@ Current implementation intentionally remains minimal.
 * API-key authentication
 * Mutual TLS
 * Built-in command whitelists
-* Output streaming
 * Async request handling
 * Docker deployment
 * Audit logging
@@ -527,5 +531,4 @@ This project is licensed under the MIT License — see the repository LICENSE fi
 
 - [PARI/GP Scripts](https://github.com/Abhrankan-Chakrabarti/pari-gp-scripts) —  
   A collection of Bash wrappers for PARI/GP number theory experiments that inspired the design of this project.
-
 

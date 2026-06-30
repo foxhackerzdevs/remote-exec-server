@@ -13,7 +13,9 @@ body = sys.stdin.buffer.read()
 # Send request with explicit UTF-8 content type
 conn.request("POST", path, body=body, headers={"Content-Type": "text/plain; charset=utf-8"})
 
-# Print response
+# Stream response line by line as it arrives
 response = conn.getresponse()
-print(response.read().decode())
+for line in response:
+    sys.stdout.buffer.write(line)
+    sys.stdout.buffer.flush()
 
