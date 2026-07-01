@@ -294,8 +294,10 @@ stdin data goes here
 
 ```python
 cmd_parts = shlex.split(raw_path)
-process = subprocess.Popen(cmd_parts, input=stdin_data,
+process = subprocess.Popen(cmd_parts, stdin=subprocess.PIPE,
                             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+process.stdin.write(stdin_data)
+process.stdin.close()  # signal EOF to the subprocess
 ```
 
 Output is streamed to the client line by line as the subprocess produces it, using HTTP chunked transfer encoding — rather than waiting for the process to exit and sending the full output at once.
