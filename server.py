@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from http.server import BaseHTTPRequestHandler, HTTPServer
-import subprocess, urllib.parse, shlex, os
+import subprocess, urllib.parse, shlex, os, threading, queue
 
 class MyHandler(BaseHTTPRequestHandler):
     def do_POST(self):
@@ -33,24 +33,34 @@ class MyHandler(BaseHTTPRequestHandler):
             self.send_header("Transfer-Encoding", "chunked")
             self.end_headers()
 
-            # Stream stdout line by line as it's produced
-            for line in process.stdout:
-                chunk = line
+            # Merge stdout and stderr into one queue via reader threads,
+            # so both streams are forwarded live and neither can block the other
+            line_queue = queue.Queue()
+
+            def reader(stream, prefix):
+                for line in stream:
+                    line_queue.put(prefix + line if prefix else line)
+                line_queue.put(None)  # sentinel: this stream is done
+
+            t_out = threading.Thread(target=reader, args=(process.stdout, b""))
+            t_err = threading.Thread(target=reader, args=(process.stderr, b"[stderr] "))
+            t_out.start()
+            t_err.start()
+
+            done_count = 0
+            while done_count < 2:
+                chunk = line_queue.get()
+                if chunk is None:
+                    done_count += 1
+                    continue
                 self.wfile.write(f"{len(chunk):X}\r\n".encode())
                 self.wfile.write(chunk)
                 self.wfile.write(b"\r\n")
                 self.wfile.flush()
 
+            t_out.join()
+            t_err.join()
             process.wait()
-
-            # Send stderr as final chunk if process failed
-            if process.returncode != 0:
-                err = process.stderr.read()
-                if err:
-                    error_msg = f"Error:\n{err.decode('utf-8', errors='replace')}".encode("utf-8")
-                    self.wfile.write(f"{len(error_msg):X}\r\n".encode())
-                    self.wfile.write(error_msg)
-                    self.wfile.write(b"\r\n")
 
             # Terminate chunked transfer
             self.wfile.write(b"0\r\n\r\n")
@@ -63,7 +73,6 @@ class MyHandler(BaseHTTPRequestHandler):
             self.wfile.write(f"Error: command not found: {cmd_parts[0]}\n".encode())
 
     def log_message(self, format, *args):
-        # Suppress default HTTP access log noise
         print(f"[{self.address_string()}] {format % args}")
 
 if __name__ == "__main__":
