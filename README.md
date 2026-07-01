@@ -298,28 +298,28 @@ process = subprocess.Popen(cmd_parts, stdin=subprocess.PIPE,
                             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 process.stdin.write(stdin_data)
 process.stdin.close()  # signal EOF to the subprocess
+
+# stdout and stderr are read by two concurrent threads feeding a shared
+# queue, so neither stream can block or lose data while waiting on the other
 ```
 
-Output is streamed to the client line by line as the subprocess produces it, using HTTP chunked transfer encoding — rather than waiting for the process to exit and sending the full output at once.
+Output is streamed to the client line by line as the subprocess produces it, using HTTP chunked transfer encoding — rather than waiting for the process to exit and sending the full output at once. stdout and stderr are captured concurrently by separate reader threads, so stderr output is never lost and can't deadlock the subprocess by filling its pipe buffer.
 
 ---
 
 ## Response
 
-The response uses `Transfer-Encoding: chunked`. Each line of stdout is sent as a separate chunk as soon as it's produced, so long-running or interactive commands (e.g. progress bars) display in real time on the client rather than appearing all at once at the end.
+The response uses `Transfer-Encoding: chunked`. Each line is sent as a separate chunk as soon as it's produced, so long-running or interactive commands (e.g. progress bars) display in real time on the client rather than appearing all at once at the end.
 
-Success:
-
-```text
-stdout output (streamed line by line)
-```
-
-Failure (appended as a final chunk if the process exits non-zero):
+stdout lines are streamed as-is. stderr lines are streamed live too, prefixed with `[stderr] ` so they're distinguishable from stdout in the client's terminal:
 
 ```text
-Error:
-stderr output
+stdout line 1
+[stderr] warning: something noteworthy
+stdout line 2
 ```
+
+Both streams are forwarded regardless of the process's exit code — not just on failure.
 
 ---
 
@@ -441,7 +441,7 @@ which gp
 Check:
 
 * Server logs
-* Command stdout/stderr behavior
+* Whether the command writes to stdout or stderr — both are streamed live and prefixed `[stderr] ` when applicable
 * Input handling
 
 ---
