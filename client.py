@@ -4,8 +4,11 @@ import http.client, sys, urllib.parse
 host = "192.168.56.1:8000"
 conn = http.client.HTTPConnection(host)  # use HTTPSConnection only if server supports TLS
 
-# Encode arguments safely
-path = "/" + urllib.parse.quote(sys.argv[0] + " " + " ".join(sys.argv[1:]))
+# Encode arguments safely — avoid trailing space when no args are given
+cmd_str = sys.argv[0]
+if len(sys.argv) > 1:
+    cmd_str += " " + " ".join(sys.argv[1:])
+path = "/" + urllib.parse.quote(cmd_str)
 
 # Read stdin as bytes to support non-Latin-1 characters (e.g. Unicode)
 body = sys.stdin.buffer.read()
