@@ -18,10 +18,15 @@ class MyHandler(BaseHTTPRequestHandler):
         try:
             process = subprocess.Popen(
                 cmd_parts,
-                input=body,
+                stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE
             )
+
+            # Write stdin data and close it so the process sees EOF
+            if body:
+                process.stdin.write(body)
+            process.stdin.close()
 
             self.send_response(200)
             self.send_header("Content-Type", "text/plain; charset=utf-8")
