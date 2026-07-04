@@ -2,6 +2,13 @@
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import subprocess, urllib.parse, shlex, os, threading, queue
 
+# Optional command whitelist. Set the REMOTE_EXEC_ALLOWED environment variable
+# to a comma-separated list of allowed command names (e.g. "gp,python,node").
+# If unset or empty, all commands are allowed (backward-compatible default —
+# strongly recommended to set this in any network-exposed deployment).
+_allowed_env = os.environ.get("REMOTE_EXEC_ALLOWED", "")
+ALLOWED = {c.strip() for c in _allowed_env.split(",") if c.strip()}
+
 class MyHandler(BaseHTTPRequestHandler):
     def do_POST(self):
         content_length = int(self.headers.get('Content-Length', 0))
@@ -13,6 +20,16 @@ class MyHandler(BaseHTTPRequestHandler):
 
         # Normalize first element to basename (safe fallback)
         cmd_parts[0] = os.path.basename(cmd_parts[0])
+
+        # Enforce whitelist if one is configured
+        if ALLOWED and cmd_parts[0] not in ALLOWED:
+            print(f"Rejected (not whitelisted): {cmd_parts[0]}")
+            self.send_response(403)
+            self.send_header("Content-Type", "text/plain; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(f"Error: command '{cmd_parts[0]}' is not allowed.\n".encode())
+            return
+
         print("Executing:", cmd_parts)
 
         try:

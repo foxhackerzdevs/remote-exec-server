@@ -79,6 +79,7 @@ Thus, Remote Exec Server & Client was born — a minimal, dependency‑free syst
 * Standard input (stdin) forwarding
 * Command-line argument support
 * Real-time output streaming (chunked transfer encoding) — live progress bars and interactive output display correctly
+* Optional command whitelist via `REMOTE_EXEC_ALLOWED` environment variable
 * BusyBox-style symlink invocation
 * Works with any executable installed on the server
 * No third-party dependencies
@@ -367,13 +368,13 @@ This project provides remote command execution capability and should be treated 
 
 ### Command Whitelisting
 
-```python
-ALLOWED = {"python", "gp", "node"}
+Built in as of v1.3.0. Set the `REMOTE_EXEC_ALLOWED` environment variable to a comma-separated list of allowed command names before starting the server:
 
-if cmd_parts[0] not in ALLOWED:
-    output = f"Command not allowed: {cmd_parts[0]}"
-    return
+```bash
+REMOTE_EXEC_ALLOWED="gp,python,node" python server.py
 ```
+
+If unset or empty, all commands are allowed (the original default behavior) — setting this is strongly recommended for any network-exposed deployment. Disallowed commands receive a `403 Forbidden` response.
 
 ### Network Restrictions
 
@@ -490,7 +491,6 @@ Current implementation intentionally remains minimal.
 * HTTPS/TLS support
 * API-key authentication
 * Mutual TLS
-* Built-in command whitelists
 * Async request handling
 * Docker deployment
 * Audit logging
