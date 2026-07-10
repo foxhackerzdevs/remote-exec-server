@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from http.server import BaseHTTPRequestHandler, HTTPServer
-import subprocess, urllib.parse, shlex, os, threading, queue
+import subprocess, urllib.parse, shlex, os, threading, queue, ssl
 
 # Optional command whitelist. Set the REMOTE_EXEC_ALLOWED environment variable
 # to a comma-separated list of allowed command names (e.g. "gp,python,node").
@@ -8,6 +8,12 @@ import subprocess, urllib.parse, shlex, os, threading, queue
 # strongly recommended to set this in any network-exposed deployment).
 _allowed_env = os.environ.get("REMOTE_EXEC_ALLOWED", "")
 ALLOWED = {c.strip() for c in _allowed_env.split(",") if c.strip()}
+
+# Optional TLS. Set REMOTE_EXEC_TLS_CERT and REMOTE_EXEC_TLS_KEY to paths of a
+# certificate and private key (PEM format) to serve over HTTPS instead of HTTP.
+# If either is unset, the server runs in plain HTTP (backward-compatible default).
+TLS_CERT = os.environ.get("REMOTE_EXEC_TLS_CERT", "")
+TLS_KEY  = os.environ.get("REMOTE_EXEC_TLS_KEY", "")
 
 class MyHandler(BaseHTTPRequestHandler):
     def do_POST(self):
@@ -94,6 +100,14 @@ class MyHandler(BaseHTTPRequestHandler):
 
 if __name__ == "__main__":
     server = HTTPServer(("0.0.0.0", 8000), MyHandler)
-    print("Serving on 0.0.0.0:8000")
-    server.serve_forever()
 
+    if TLS_CERT and TLS_KEY:
+        ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        ctx.load_cert_chain(certfile=TLS_CERT, keyfile=TLS_KEY)
+        server.socket = ctx.wrap_socket(server.socket, server_side=True)
+        print(f"Serving HTTPS on 0.0.0.0:8000 (cert: {TLS_CERT})")
+    else:
+        print("Serving HTTP on 0.0.0.0:8000 (set REMOTE_EXEC_TLS_CERT and "
+              "REMOTE_EXEC_TLS_KEY to enable HTTPS)")
+
+    server.serve_forever()

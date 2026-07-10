@@ -80,6 +80,7 @@ Thus, Remote Exec Server & Client was born — a minimal, dependency‑free syst
 * Command-line argument support
 * Real-time output streaming (chunked transfer encoding) — live progress bars and interactive output display correctly
 * Optional command whitelist via `REMOTE_EXEC_ALLOWED` environment variable
+* Optional TLS/HTTPS via `REMOTE_EXEC_TLS_CERT` / `REMOTE_EXEC_TLS_KEY` (server) and `REMOTE_EXEC_TLS` (client)
 * BusyBox-style symlink invocation
 * Works with any executable installed on the server
 * No third-party dependencies
@@ -213,19 +214,19 @@ Set the server host:
 host = "192.168.56.1:8000"
 ```
 
-To enable HTTPS:
+**TLS**, built in as of v1.4.0. Set environment variables before running the client:
 
-```python
-http.client.HTTPSConnection
+```bash
+REMOTE_EXEC_TLS=1 python client.py
 ```
 
-instead of:
+For self-signed certificates (typical for local/dev deployments), also skip verification:
 
-```python
-http.client.HTTPConnection
+```bash
+REMOTE_EXEC_TLS=1 REMOTE_EXEC_TLS_INSECURE=1 python client.py
 ```
 
-The server must also be configured for TLS.
+`REMOTE_EXEC_TLS_INSECURE` disables certificate verification entirely — never set it when connecting over an untrusted network, only for local testing with a self-signed cert you generated yourself.
 
 ---
 
@@ -242,6 +243,22 @@ Change port:
 ```python
 HTTPServer(("0.0.0.0", 9000), MyHandler)
 ```
+
+**TLS**, built in as of v1.4.0. Set `REMOTE_EXEC_TLS_CERT` and `REMOTE_EXEC_TLS_KEY` to the paths of a PEM certificate and private key:
+
+```bash
+REMOTE_EXEC_TLS_CERT=cert.pem REMOTE_EXEC_TLS_KEY=key.pem python server.py
+```
+
+If either is unset, the server runs in plain HTTP (the original default behavior).
+
+**Generating a self-signed certificate for local testing:**
+
+```bash
+openssl req -x509 -newkey rsa:2048 -keyout key.pem -out cert.pem -days 365 -nodes -subj "/CN=localhost"
+```
+
+For real deployments, use a certificate from a trusted CA (e.g. Let's Encrypt) instead of a self-signed one, and omit `REMOTE_EXEC_TLS_INSECURE` on the client.
 
 ---
 
@@ -402,7 +419,7 @@ Run commands:
 
 ### Encryption
 
-Use HTTPS/TLS whenever traffic crosses untrusted networks.
+Built in as of v1.4.0. Set `REMOTE_EXEC_TLS_CERT` / `REMOTE_EXEC_TLS_KEY` on the server and `REMOTE_EXEC_TLS=1` on the client — see [Configuration](#configuration). Use HTTPS/TLS whenever traffic crosses an untrusted network; a self-signed certificate is fine for local testing, but use a CA-issued certificate for real deployments.
 
 ---
 
@@ -477,7 +494,6 @@ host = "SERVER_IP:8000"
 Current implementation intentionally remains minimal.
 
 * No authentication
-* No TLS support by default
 * No concurrency (single request handled at a time)
 * No request validation
 * No rate limiting
@@ -488,7 +504,6 @@ Current implementation intentionally remains minimal.
 
 # Future Improvements
 
-* HTTPS/TLS support
 * API-key authentication
 * Mutual TLS
 * Async request handling
