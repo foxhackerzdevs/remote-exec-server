@@ -46,6 +46,8 @@
 
 # Overview
 
+**More about me / other projects:** [abhrankan.netlify.app](https://abhrankan.netlify.app)
+
 Remote Exec Server & Client is a minimal remote command execution framework written entirely with the Python standard library.
 
 The project consists of:
@@ -314,14 +316,19 @@ stdin data goes here
 cmd_parts = shlex.split(raw_path)
 process = subprocess.Popen(cmd_parts, stdin=subprocess.PIPE,
                             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-process.stdin.write(stdin_data)
-process.stdin.close()  # signal EOF to the subprocess
 
-# stdout and stderr are read by two concurrent threads feeding a shared
-# queue, so neither stream can block or lose data while waiting on the other
+# stdin is written, and stdout/stderr are read, by three concurrent
+# threads -- not sequentially. Writing all of stdin first (before
+# anything drains stdout/stderr) deadlocks for any command whose
+# input exceeds the OS pipe buffer (~64KB on Linux): the child fills
+# its stdout pipe and blocks since nobody's reading yet, stops
+# consuming stdin, and the stdin write then blocks too.
+threading.Thread(target=write_stdin, args=(process, stdin_data)).start()
+threading.Thread(target=read_stream, args=(process.stdout, "")).start()
+threading.Thread(target=read_stream, args=(process.stderr, "[stderr] ")).start()
 ```
 
-Output is streamed to the client line by line as the subprocess produces it, using HTTP chunked transfer encoding — rather than waiting for the process to exit and sending the full output at once. stdout and stderr are captured concurrently by separate reader threads, so stderr output is never lost and can't deadlock the subprocess by filling its pipe buffer.
+Output is streamed to the client line by line as the subprocess produces it, using HTTP chunked transfer encoding — rather than waiting for the process to exit and sending the full output at once. stdin is written and stdout/stderr are read by three concurrent threads (fixed in v1.5.0 — previously stdin was written in a single blocking call before the stdout/stderr threads started, which deadlocked the entire single-threaded server for any command whose stdin exceeded the OS pipe buffer, roughly 64KB on Linux).
 
 ---
 
@@ -494,7 +501,7 @@ host = "SERVER_IP:8000"
 Current implementation intentionally remains minimal.
 
 * No authentication
-* No concurrency (single request handled at a time)
+* No concurrency (single request handled at a time — a slow or long-running command blocks all other clients until it finishes; this is a known, accepted tradeoff of the minimal design, distinct from the stdin/stdout deadlock bug fixed in v1.5.0, which caused requests to hang *indefinitely* regardless of this limitation)
 * No request validation
 * No rate limiting
 * No audit logging
@@ -548,4 +555,3 @@ This project is licensed under the MIT License — see the repository LICENSE fi
 
 - [PARI/GP Scripts](https://github.com/Abhrankan-Chakrabarti/pari-gp-scripts) —  
   A collection of Bash wrappers for PARI/GP number theory experiments that inspired the design of this project.
-

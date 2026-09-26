@@ -1,6 +1,19 @@
 #!/usr/bin/env python3
 import http.client, sys, urllib.parse, os, ssl
 
+VERSION = "1.5.0"
+
+# Checking the client's version can't be a CLI flag: this script forwards
+# *everything* it's invoked with -- symlink name and all arguments -- to
+# the server as the remote command to run. A `--version` flag would be
+# indistinguishable from someone legitimately trying to check the
+# *remote* command's version (e.g. a `python` symlink run as
+# `python --version`), so it's an env var instead, consistent with how
+# REMOTE_EXEC_TLS and REMOTE_EXEC_ALLOWED are already configured here.
+if os.environ.get("REMOTE_EXEC_CLIENT_VERSION", "") == "1":
+    print(f"remote-exec-client {VERSION}")
+    sys.exit(0)
+
 host = "192.168.56.1:8000"
 
 # Optional TLS. Set REMOTE_EXEC_TLS=1 to connect via HTTPS instead of HTTP.

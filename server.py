@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 from http.server import BaseHTTPRequestHandler, HTTPServer
-import subprocess, urllib.parse, shlex, os, threading, queue, ssl
+import subprocess, urllib.parse, shlex, os, sys, threading, queue, ssl
+
+VERSION = "1.5.0"
 
 # Optional command whitelist. Set the REMOTE_EXEC_ALLOWED environment variable
 # to a comma-separated list of allowed command names (e.g. "gp,python,node").
@@ -22,7 +24,24 @@ class MyHandler(BaseHTTPRequestHandler):
 
         # Decode URL path and split into command parts
         raw_path = urllib.parse.unquote(self.path.lstrip("/"))
-        cmd_parts = shlex.split(raw_path)
+        try:
+            cmd_parts = shlex.split(raw_path)
+        except ValueError as e:
+            # Malformed shell syntax (e.g. an unterminated quote)
+            self.send_response(400)
+            self.send_header("Content-Type", "text/plain; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(f"Error: could not parse command: {e}\n".encode())
+            return
+
+        if not cmd_parts:
+            # Empty path (e.g. a bare POST to "/") -- previously crashed
+            # with an uncaught IndexError on the next line.
+            self.send_response(400)
+            self.send_header("Content-Type", "text/plain; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(b"Error: no command specified.\n")
+            return
 
         # Normalize first element to basename (safe fallback)
         cmd_parts[0] = os.path.basename(cmd_parts[0])
@@ -46,11 +65,6 @@ class MyHandler(BaseHTTPRequestHandler):
                 stderr=subprocess.PIPE
             )
 
-            # Write stdin data and close it so the process sees EOF
-            if body:
-                process.stdin.write(body)
-            process.stdin.close()
-
             self.send_response(200)
             self.send_header("Content-Type", "text/plain; charset=utf-8")
             self.send_header("Transfer-Encoding", "chunked")
@@ -65,8 +79,35 @@ class MyHandler(BaseHTTPRequestHandler):
                     line_queue.put(prefix + line if prefix else line)
                 line_queue.put(None)  # sentinel: this stream is done
 
+            def stdin_writer(proc, data):
+                # Runs concurrently with the stdout/stderr readers below --
+                # writing all of stdin first (as a single blocking call
+                # before anything drains stdout/stderr) deadlocks for any
+                # command whose input exceeds the OS pipe buffer (~64KB on
+                # Linux): the child fills its stdout pipe and blocks since
+                # nobody's reading yet, stops consuming stdin, and this
+                # write() then blocks too -- a classic circular pipe wait,
+                # the same one subprocess.communicate() avoids internally
+                # by handling all three streams at once instead of in
+                # sequence.
+                try:
+                    if data:
+                        proc.stdin.write(data)
+                except BrokenPipeError:
+                    # Process exited or closed stdin without reading
+                    # everything (e.g. a command that ignores stdin) --
+                    # not an error condition here.
+                    pass
+                finally:
+                    try:
+                        proc.stdin.close()
+                    except OSError:
+                        pass
+
+            t_in = threading.Thread(target=stdin_writer, args=(process, body))
             t_out = threading.Thread(target=reader, args=(process.stdout, b""))
             t_err = threading.Thread(target=reader, args=(process.stderr, b"[stderr] "))
+            t_in.start()
             t_out.start()
             t_err.start()
 
@@ -81,6 +122,7 @@ class MyHandler(BaseHTTPRequestHandler):
                 self.wfile.write(b"\r\n")
                 self.wfile.flush()
 
+            t_in.join()
             t_out.join()
             t_err.join()
             process.wait()
@@ -99,6 +141,10 @@ class MyHandler(BaseHTTPRequestHandler):
         print(f"[{self.address_string()}] {format % args}")
 
 if __name__ == "__main__":
+    if "--version" in sys.argv or "-V" in sys.argv:
+        print(f"remote-exec-server {VERSION}")
+        sys.exit(0)
+
     server = HTTPServer(("0.0.0.0", 8000), MyHandler)
 
     if TLS_CERT and TLS_KEY:
